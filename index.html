@@ -64,19 +64,36 @@
     
     /* 모바일에서는 더 크게 */
     @media (max-width: 520px) {
+      /* 좌우 이동 버튼 */
       .sideNav {
-        width: 64px;
-        border-radius: 18px;
-        font-size: 26px;
+        width: 52px;          /* ↓ 줄임 */
+        min-height: 110px;    /* ↓ 줄임 */
+        font-size: 22px;      /* ↓ 줄임 */
+        border-radius: 16px;
       }
-      .sideNav.left { left: 8px; }
-      .sideNav.right { right: 8px; }
     
+      .sideNav.left { left: 6px; }
+      .sideNav.right { right: 6px; }
+    
+      /* 단어 박스 패딩도 같이 줄임 */
       .wordBox {
-        padding-left: 86px;
-        padding-right: 86px;
+        padding-left: 70px;
+        padding-right: 70px;
+      }
+    
+      /* 단어 크기 */
+      .word {
+        font-size: 30px;   /* 기존 36~40 → 축소 */
+        line-height: 1.2;
+      }
+    
+      /* 뜻 크기 */
+      .meaning {
+        font-size: 18px;   /* 기존 22~24 → 축소 */
+        line-height: 1.35;
       }
     }
+
 
 
     /* ===== Viewer ===== */
