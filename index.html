@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>단어장 뷰어</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Apple SD Gothic Neo, "Noto Sans KR", sans-serif; margin: 18px; }
+    .card { max-width: 980px; margin: 0 auto; padding: 16px; border: 1px solid #ddd; border-radius: 14px; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin: 10px 0; }
+    label { font-size: 14px; }
+    input[type="number"] { width: 110px; padding: 8px; border: 1px solid #ccc; border-radius: 10px; }
+    button { padding: 10px 14px; border: 0; border-radius: 10px; cursor: pointer; }
+    button.primary { background:#111; color:#fff; }
+    button.secondary { background:#eee; }
+    button:disabled { opacity:0.5; cursor:not-allowed; }
+    .pill { display:inline-block; padding: 4px 10px; border:1px solid #ddd; border-radius:999px; font-size:12px; color:#444; background:#fff; }
+    .log { white-space: pre-wrap; background:#fafafa; border:1px solid #eee; border-radius: 12px; padding: 12px; font-size: 13px; }
+    .bad { color:#b00020; }
+    .good { color:#0a7a3a; }
+
+    .viewer {
+      margin-top: 14px;
+      border: 1px solid #eee;
+      border-radius: 14px;
+      padding: 18px;
+      background: #fff;
+      min-height: 220px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .dayPickerWrap {
+      display:flex;
+      align-items:center;
+      gap: 8px;
+    }
+
+    /* 생일 고르는 느낌: 기본 select도 충분히 "눌렀을 때 숫자 쭉 나옴" */
+    select {
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      background: #fff;
+      font-size: 14px;
+      max-height: 260px;
+    }
+
+    .counter { font-size: 13px; color:#555; }
+
+    .wordBox {
+      margin-top: 8px;
+      border: 1px solid #f0f0f0;
+      border-radius: 16px;
+      padding: 26px 18px;
+      text-align: center;
+      background: linear-gradient(180deg, #ffffff 0%, #fbfbfb 100%);
+    }
+
+    .word { font-size: 34px; font-weight: 750; letter-spacing: 0.2px; }
+    .meaning { margin-top: 14px; font-size: 22px; color:#222; line-height: 1.4; }
+    .hint { margin-top: 10px; font-size: 13px; color:#777; }
+
+    .controls {
+      display:flex;
+      flex-wrap:wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 14px;
+    }
+
+    .smallBtn { padding: 10px 12px; border-radius: 12px; background:#eee; }
+    .smallBtn.primary { background:#111; color:#fff; }
+
+    .muted { color:#666; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 style="margin:0 0 8px;">단어장 웹 뷰어</h2>
+    <div class="muted">엑셀 형식: (A=day, B=단어, C=뜻) / 시트 우선순위: <b>단어장</b> → <b>Sheet1</b> → 첫 시트</div>
+
+    <div class="row" style="margin-top:14px;">
+      <button class="secondary" id="pickBtn">엑셀 파일 불러오기</button>
+      <span class="pill" id="fileLabel">파일: (선택 안 됨)</span>
+      <span class="pill" id="sheetLabel">시트: -</span>
+      <span class="pill" id="countLabel">단어: -</span>
+    </div>
+
+    <input id="fileInput" type="file" accept=".xlsx,.xls,.xlsm" style="display:none" />
+
+    <div class="row">
+      <label>Day 범위:</label>
+      <input id="dayStart" type="number" min="0" value="1" />
+      <span>~</span>
+      <input id="dayEnd" type="number" min="0" value="1" />
+      <button class="secondary" id="applyBtn" disabled>범위 적용</button>
+      <span class="pill" id="rangeInfo">범위: -</span>
+    </div>
+
+    <div id="status" class="log" style="margin-top:12px;">대기 중…</div>
+
+    <div class="viewer" id="viewer" style="display:none;">
+      <div class="topbar">
+        <div class="counter" id="counter">-</div>
+
+        <div class="dayPickerWrap">
+          <span class="pill">DAY</span>
+          <select id="daySelect" disabled></select>
+        </div>
+      </div>
+
+      <div class="wordBox">
+        <div class="word" id="wordText">-</div>
+        <div class="meaning" id="meanText" style="display:none;">-</div>
+        <div class="hint" id="hintText">버튼을 눌러 뜻을 보세요</div>
+      </div>
+
+      <div class="controls">
+        <button class="smallBtn" id="firstBtn" disabled>처음으로</button>
+        <button class="smallBtn" id="prevBtn" disabled>이전</button>
+
+        <button class="smallBtn primary" id="toggleBtn" disabled>뜻 보기</button>
+
+        <button class="smallBtn" id="nextBtn" disabled>다음</button>
+        <button class="smallBtn" id="lastBtn" disabled>끝으로</button>
+      </div>
+
+      <div class="controls">
+        <button class="smallBtn" id="prevDayBtn" disabled>이전 Day</button>
+        <button class="smallBtn" id="nextDayBtn" disabled>다음 Day</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./xlsx.full.min.js"></script>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const statusEl = $("status");
+    const viewerEl = $("viewer");
+
+    let currentFile = null;
+    let allRows = [];        // 전체 {day, word, mean}
+    let filtered = [];       // 범위 필터링된 rows
+    let daysInRange = [];    // 범위 내 day 목록(정렬)
+    let currentIndex = 0;
+    let meaningShown = false;
+
+    function log(msg, cls="") {
+      statusEl.textContent = msg;
+      statusEl.className = "log " + cls;
+    }
+    function assert(cond, msg) { if (!cond) throw new Error(msg); }
+    function toInt(x) {
+      const n = Number(x);
+      if (!Number.isFinite(n)) return null;
+      return Math.trunc(n);
+    }
+
+    function supportsFSAccess() {
+      return !!window.showOpenFilePicker;
+    }
+
+    // ===== 시트 선택: 단어장 -> Sheet1 -> 첫 시트 =====
+    function pickSheetName(wb) {
+      const names = wb.SheetNames || [];
+      const norm = (s) => (s ?? "").toString().replace(/\s+/g, "").trim();
+      const findBy = (target) => names.find(n => norm(n) === norm(target));
+      return findBy("단어장") || findBy("Sheet1") || names[0];
+    }
+
+    // ===== 자동 컬럼 추론(웹 PDF 코드에서 가져온 로직) =====
+    function parseFlexibleDayWordMean(data2d) {
+      const norm = (v) => (v ?? "").toString().trim();
+      const isInt = (v) => /^\d+$/.test(norm(v));
+      const looksEnglish = (v) => /[A-Za-z]/.test(norm(v)) && !/[가-힣]/.test(norm(v));
+      const looksKorean  = (v) => /[가-힣]/.test(norm(v));
+
+      const rowCount = data2d.length;
+      const colCount = Math.max(0, ...data2d.map(r => (r ? r.length : 0)));
+
+      const scores = Array.from({ length: colCount }, () => ({ nonEmpty:0, day:0, eng:0, kor:0 }));
+
+      for (let r = 0; r < rowCount; r++) {
+        const row = data2d[r] || [];
+        for (let c = 0; c < colCount; c++) {
+          const v = row[c];
+          const s = norm(v);
+          if (!s) continue;
+          scores[c].nonEmpty++;
+          if (isInt(s)) scores[c].day++;
+          if (looksEnglish(s)) scores[c].eng++;
+          if (looksKorean(s)) scores[c].kor++;
+        }
+      }
+
+      const ratio = (num, den) => den ? num / den : 0;
+
+      let dayCol = -1, bestDay = 0;
+      for (let c = 0; c < colCount; c++) {
+        const nonEmpty = scores[c].nonEmpty;
+        if (nonEmpty < 5) continue;
+        const dayR = ratio(scores[c].day, nonEmpty);
+        if (dayR > bestDay) { bestDay = dayR; dayCol = c; }
+      }
+      if (dayCol === -1 || bestDay < 0.7) return { rows: [], dayCol:-1, wordCol:-1, meanCol:-1 };
+
+      let wordCol = -1, bestEng = 0;
+      let meanCol = -1, bestKor = 0;
+      for (let c = 0; c < colCount; c++) {
+        if (c === dayCol) continue;
+        const nonEmpty = scores[c].nonEmpty;
+        if (nonEmpty < 5) continue;
+
+        const engR = ratio(scores[c].eng, nonEmpty);
+        const korR = ratio(scores[c].kor, nonEmpty);
+
+        if (engR > bestEng) { bestEng = engR; wordCol = c; }
+        if (korR > bestKor) { bestKor = korR; meanCol = c; }
+      }
+      if (wordCol === -1 || meanCol === -1) return { rows: [], dayCol, wordCol, meanCol };
+
+      const rows = [];
+      for (let r = 0; r < rowCount; r++) {
+        const row = data2d[r] || [];
+        const day = row[dayCol];
+        if (!isInt(day)) continue;
+        const d = Number(norm(day));
+        const w = norm(row[wordCol]);
+        const m = norm(row[meanCol]);
+        if (!w) continue;
+        rows.push({ day: d, word: w, mean: m });
+      }
+
+      return { rows, dayCol, wordCol, meanCol };
+    }
+
+    // ===== 엑셀 읽기 =====
+    async function readExcel(file) {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+
+      const sheetName = pickSheetName(wb);
+      const ws = wb.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: "" });
+
+      // 1) 고정 파싱(A,B,C)
+      const fixed = [];
+      for (const r of data) {
+        if (!r || r.length < 2) continue;
+        const day = toInt(r[0]);
+        const word = (r[1] ?? "").toString().trim();
+        const mean = (r[2] ?? "").toString().trim();
+        if (day === null) continue;
+        if (!word) continue;
+        fixed.push({ day, word, mean });
+      }
+
+      if (fixed.length >= 10) return { rows: fixed, sheetName };
+
+      // 2) fallback
+      const auto = parseFlexibleDayWordMean(data);
+      if (auto.rows.length >= 10) return { ro
