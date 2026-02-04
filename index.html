@@ -56,11 +56,26 @@
     .navBtns {
       display:flex;
       justify-content: center;
-      gap: 10px;
+      gap: 8px;
       margin-top: 12px;
       flex-wrap: wrap;
     }
-    .navBtns button { min-width: 96px; }
+
+    /* ✅ 버튼을 작게(모바일 한 줄 목표) */
+    .navBtns button {
+      padding: 10px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+      min-width: 0;
+    }
+
+    /* 모바일에서는 더 작게 */
+    @media (max-width: 520px) {
+      .navBtns { gap: 6px; }
+      .navBtns button { padding: 9px 9px; font-size: 13px; }
+      .word { font-size: 34px; }
+      .meaning { font-size: 20px; }
+    }
   </style>
 </head>
 <body>
@@ -81,7 +96,7 @@
         <span class="pill" id="countLabel">단어: -</span>
       </div>
 
-      <!-- ✅ 모바일에서 .xlsm 선택이 안 보이는 문제를 피하려고 accept 제거 -->
+      <!-- ✅ 모바일에서 .xlsm 선택 이슈 피하려고 accept 제거 -->
       <input id="fileInput" type="file" style="display:none" />
 
       <div class="row" style="margin-top:8px;">
@@ -111,15 +126,14 @@
       </div>
 
       <div class="navBtns" id="navBtns">
-        <!-- 랜덤 OFF일 때 보여줄 버튼들 -->
-        <button class="secondary" id="firstBtn">처음</button>
-        <button class="secondary" id="prevDayBtn">이전 Day</button>
+        <button class="secondary" id="firstBtn" title="처음">&lt;&lt;</button>
+        <button class="secondary" id="prevDayBtn" title="이전 Day">|&lt;</button>
 
-        <button class="secondary" id="prevBtn">이전</button>
-        <button class="secondary" id="nextBtn">다음</button>
+        <button class="secondary" id="prevBtn" title="이전">&lt;</button>
+        <button class="secondary" id="nextBtn" title="다음">&gt;</button>
 
-        <button class="secondary" id="nextDayBtn">다음 Day</button>
-        <button class="secondary" id="lastBtn">끝</button>
+        <button class="secondary" id="nextDayBtn" title="다음 Day">&gt;|</button>
+        <button class="secondary" id="lastBtn" title="끝">&gt;&gt;</button>
       </div>
     </div>
   </div>
@@ -134,15 +148,15 @@
 
     // Data
     let allRows = [];
-    let inRange = [];      // day 범위 내 (day 오름차순 정렬)
-    let daysInRange = [];  // 범위 내 day 목록
+    let inRange = [];
+    let daysInRange = [];
 
-    // Sequential mode index
+    // Sequential
     let seqIndex = 0;
 
-    // Random mode (중복 없이 랜덤)
+    // Random (no-duplicate order)
     let randomOn = false;
-    let randomOrder = [];  // inRange의 인덱스들
+    let randomOrder = [];
     let randomPos = 0;
 
     // meaning toggle
@@ -171,7 +185,6 @@
       }
     }
 
-    // 시트 우선순위
     function pickSheetName(wb) {
       const names = wb.SheetNames || [];
       const norm = (s) => (s ?? "").toString().replace(/\s+/g, "").trim();
@@ -179,7 +192,6 @@
       return findBy("단어장") || findBy("Sheet1") || names[0];
     }
 
-    // fallback 자동 추론
     function parseFlexibleDayWordMean(data2d) {
       const norm = (v) => (v ?? "").toString().trim();
       const isInt = (v) => /^\d+$/.test(norm(v));
@@ -250,7 +262,6 @@
       const ws = wb.Sheets[sheetName];
       const data = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: "" });
 
-      // 고정 파싱(A,B,C)
       const fixed = [];
       for (const r of data) {
         if (!r || r.length < 2) continue;
@@ -311,15 +322,11 @@
     }
 
     function setNavMode() {
-      // 랜덤 ON이면: 이전/다음만 남기고 나머지 숨김
       const showExtra = !randomOn;
-
       $("firstBtn").style.display = showExtra ? "" : "none";
-      $("lastBtn").style.display = showExtra ? "" : "none";
+      $("lastBtn").style.display  = showExtra ? "" : "none";
       $("prevDayBtn").style.display = showExtra ? "" : "none";
       $("nextDayBtn").style.display = showExtra ? "" : "none";
-
-      // prev/next는 항상 표시
       $("prevBtn").style.display = "";
       $("nextBtn").style.display = "";
     }
@@ -347,17 +354,14 @@
         $("counter").textContent = `Day ${item.day} · ${seqIndex + 1} / ${inRange.length}`;
       }
 
-      // prev/next disable
       $("prevBtn").disabled = randomOn ? (randomPos === 0) : (seqIndex === 0);
       $("nextBtn").disabled = randomOn ? (randomPos >= inRange.length - 1) : (seqIndex >= inRange.length - 1);
 
-      // extra buttons disable (랜덤 OFF일 때만 의미 있음)
       if (!randomOn) {
         $("firstBtn").disabled = (seqIndex === 0);
         $("lastBtn").disabled  = (seqIndex >= inRange.length - 1);
 
-        const curDay = item.day;
-        const di = daysInRange.indexOf(curDay);
+        const di = daysInRange.indexOf(item.day);
         $("prevDayBtn").disabled = (di <= 0);
         $("nextDayBtn").disabled = (di === -1 || di >= daysInRange.length - 1);
       }
@@ -420,9 +424,8 @@
 
       seqIndex = 0;
       meaningShown = false;
-
-      // 랜덤은 OFF로 시작(원하면 유지로 바꿔줄 수도 있음)
       randomOn = false;
+
       buildRandomOrder();
 
       setupWrap.style.display = "none";
@@ -440,7 +443,6 @@
     const IDB_DB = "vocab_note_app";
     const IDB_STORE = "kv";
     const KEY_HANDLE = "last_excel_handle";
-    const KEY_LAST_NAME = "last_excel_name";
 
     function idbOpen() {
       return new Promise((resolve, reject) => {
@@ -473,13 +475,14 @@
     }
     async function saveLastHandle(handle) {
       await idbSet(KEY_HANDLE, handle);
-      await idbSet(KEY_LAST_NAME, handle?.name || "");
     }
     async function loadLastHandle() { return await idbGet(KEY_HANDLE); }
 
     async function ensurePrevButtonState() {
       if (!supportsFSAccess()) {
-        $("prevFileBtn").disabled = true;
+        // 모바일은 대부분 FS Access 미지원 → 버튼을 "다시 선택" 용도로 살려도 됨
+        $("prevFileBtn").disabled = false;
+        $("prevFileBtn").textContent = "이전 파일(다시 선택)";
         return;
       }
       try {
@@ -488,6 +491,15 @@
       } catch {
         $("prevFileBtn").disabled = true;
       }
+    }
+
+    async function requestHandlePermission(handle) {
+      // ✅ 권한 팝업이 가능한 환경이면 여기서 뜸
+      let perm = await handle.queryPermission({ mode: "read" });
+      if (perm !== "granted") {
+        perm = await handle.requestPermission({ mode: "read" });
+      }
+      assert(perm === "granted", "파일 접근 권한이 필요합니다. 권한을 허용해 주세요.");
     }
 
     // ===== File pick =====
@@ -505,11 +517,14 @@
           }],
         });
         assert(handle, "파일을 선택하지 않았습니다.");
+        await requestHandlePermission(handle);
         currentHandle = handle;
         await saveLastHandle(handle);
         $("prevFileBtn").disabled = false;
         return;
       }
+
+      // FS Access 미지원(모바일): input으로 선택
       await new Promise((resolve, reject) => {
         const input = $("fileInput");
         input.value = "";
@@ -522,15 +537,25 @@
       });
     }
 
-    async function usePreviousFile() {
-      assert(supportsFSAccess(), "이 브라우저는 ‘이전 파일 불러오기’를 지원하지 않습니다.");
+    async function usePreviousFileOrFallbackPick() {
+      if (!supportsFSAccess()) {
+        // ✅ 모바일: "이전 파일"이라는 개념이 불가능하니, 다시 선택하도록 폴백
+        await new Promise((resolve, reject) => {
+          const input = $("fileInput");
+          input.value = "";
+          input.onchange = () => {
+            const f = input.files?.[0];
+            if (!f) reject(new Error("파일을 선택하지 않았습니다."));
+            else resolve();
+          };
+          input.click();
+        });
+        return;
+      }
+
       const handle = await loadLastHandle();
       assert(handle, "저장된 이전 파일이 없습니다.");
-
-      let perm = await handle.queryPermission({ mode: "read" });
-      if (perm !== "granted") perm = await handle.requestPermission({ mode: "read" });
-      assert(perm === "granted", "파일 접근 권한이 필요합니다.");
-
+      await requestHandlePermission(handle); // ✅ 여기서 권한 알림(가능한 브라우저)
       currentHandle = handle;
     }
 
@@ -552,10 +577,7 @@
       $("startBtn").disabled = false;
 
       log(
-        `파일: ${shownName}\n` +
-        `시트: ${sheetName}\n` +
-        `총 단어: ${allRows.length}개\n` +
-        `Day 범위를 정하고 '시작'을 누르세요.`,
+        `파일: ${shownName}\n시트: ${sheetName}\n총 단어: ${allRows.length}개\nDay 범위를 정하고 '시작'을 누르세요.`,
         "good"
       );
     }
@@ -575,7 +597,7 @@
     $("prevFileBtn").addEventListener("click", async () => {
       try {
         $("startBtn").disabled = true;
-        await usePreviousFile();
+        await usePreviousFileOrFallbackPick();
         await loadExcelAndEnableStart();
       } catch (e) {
         console.error(e);
@@ -592,15 +614,12 @@
 
     $("shuffleBtn").addEventListener("click", () => {
       if (!inRange.length) return;
-
-      // 랜덤 ON으로 바뀌면 새로운 랜덤 순서로 1/?부터
       randomOn = !randomOn;
       meaningShown = false;
 
       if (randomOn) {
         buildRandomOrder();
       } else {
-        // 랜덤 OFF로 돌아오면: 현재 랜덤에서 보고 있던 단어를 seqIndex로 맞춤
         const cur = currentItem();
         const idx = inRange.findIndex(r => r.day === cur.day && r.word === cur.word && r.mean === cur.mean);
         if (idx >= 0) seqIndex = idx;
