@@ -69,23 +69,6 @@
       text-align: center;
     }
 
-    
-    /* 모바일에서는 더 크게 */
-    @media (max-width: 520px) {
-      .textSafe{
-        width: calc(100% - 190px); /* ✅ 모바일: 버튼이 더 커서 안전영역 더 줄임 */
-      }
-    
-      .word{
-        font-size: 24px;  /* ✅ 더 줄임 */
-        line-height: 1.15;
-      }
-      .meaning{
-        font-size: 16px;  /* ✅ 더 줄임 */
-        line-height: 1.35;
-      }
-    }
-
 
 
 
@@ -106,6 +89,7 @@
     .wordBox {
       border: 1px solid #f0f0f0;
       border-radius: 18px;
+      padding: 30px 18px;
       text-align: center;
       background: linear-gradient(180deg, #ffffff 0%, #fbfbfb 100%);
       user-select: none;
@@ -116,8 +100,8 @@
       justify-content: center;
       gap: 10px;
     }
-    .word { font-size: 38px; font-weight: 800; letter-spacing: 0.2px; }
-    .meaning { font-size: 22px; color:#222; line-height: 1.4; }
+    .word { font-size: 24px; font-weight: 800; letter-spacing: 0.2px; }
+    .meaning { font-size: 16px; color:#222; line-height: 1.4; }
 
     .navBtns {
       display:flex;
@@ -139,6 +123,8 @@
     @media (max-width: 520px) {
       .navBtns { gap: 6px; }
       .navBtns button { padding: 9px 9px; font-size: 13px; }
+      .word { font-size: 34px; }
+      .meaning { font-size: 20px; }
     }
   </style>
 </head>
@@ -733,3 +719,5 @@
   </script>
 </body>
 </html>
+
+어라 변한게 없는데 혹시 내가 여기서 뭐 잘못 쓴 거 있어?
