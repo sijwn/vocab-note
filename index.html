@@ -270,4 +270,233 @@
 
       // 2) fallback
       const auto = parseFlexibleDayWordMean(data);
-      if (auto.rows.length >= 10) return { ro
+      if (auto.rows.length >= 10) return { rows: auto.rows, sheetName };
+
+      return { rows: fixed, sheetName };
+    }
+
+    // ===== 상태/UI 업데이트 =====
+    function computeMinMaxDay(rows) {
+      let min = Infinity, max = -Infinity;
+      for (const r of rows) {
+        if (typeof r.day !== "number") continue;
+        min = Math.min(min, r.day);
+        max = Math.max(max, r.day);
+      }
+      if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+      return { min, max };
+    }
+
+    function applyRange() {
+      const s = toInt($("dayStart").value);
+      const e = toInt($("dayEnd").value);
+      assert(s !== null && e !== null, "Day 값이 올바르지 않습니다.");
+      assert(e >= s, "Day 끝값이 시작값보다 작습니다.");
+
+      filtered = allRows
+        .filter(r => r.day >= s && r.day <= e)
+        .sort((a,b) => (a.day - b.day)); // day 오름차순(엑셀 순서를 더 엄밀히 유지하려면 index 추가도 가능)
+
+      assert(filtered.length > 0, "해당 Day 범위에 단어가 없습니다.");
+
+      // daysInRange 구성
+      const set = new Set(filtered.map(r => r.day));
+      daysInRange = Array.from(set).sort((a,b)=>a-b);
+
+      currentIndex = 0;
+      meaningShown = false;
+
+      $("rangeInfo").textContent = `범위: Day ${s}~${e} / ${filtered.length}개`;
+      setupDaySelect();
+      renderCurrent();
+      enableViewerButtons(true);
+      viewerEl.style.display = "block";
+      log("범위 적용 완료. 단어를 넘겨보세요.", "good");
+    }
+
+    function setupDaySelect() {
+      const sel = $("daySelect");
+      sel.innerHTML = "";
+      for (const d of daysInRange) {
+        const opt = document.createElement("option");
+        opt.value = String(d);
+        opt.textContent = String(d);
+        sel.appendChild(opt);
+      }
+      sel.disabled = daysInRange.length === 0;
+      // 현재 단어 day로 맞추기
+      const curDay = filtered[currentIndex]?.day;
+      if (curDay != null) sel.value = String(curDay);
+    }
+
+    function enableViewerButtons(on) {
+      const ids = ["firstBtn","prevBtn","toggleBtn","nextBtn","lastBtn","prevDayBtn","nextDayBtn","daySelect"];
+      ids.forEach(id => $(id).disabled = !on);
+    }
+
+    function renderCurrent() {
+      const item = filtered[currentIndex];
+      if (!item) return;
+
+      $("wordText").textContent = item.word || "-";
+      $("meanText").textContent = item.mean || "";
+      $("meanText").style.display = meaningShown ? "block" : "none";
+      $("toggleBtn").textContent = meaningShown ? "뜻 숨기기" : "뜻 보기";
+      $("hintText").textContent = meaningShown ? "버튼을 누르면 뜻을 다시 숨길 수 있어요" : "버튼을 눌러 뜻을 보세요";
+
+      const total = filtered.length;
+      $("counter").textContent = `Day ${item.day} · ${currentIndex + 1} / ${total}`;
+
+      // day select sync
+      const sel = $("daySelect");
+      if (!sel.disabled) sel.value = String(item.day);
+
+      // 이동 버튼 enable/disable
+      $("firstBtn").disabled = (currentIndex === 0);
+      $("prevBtn").disabled = (currentIndex === 0);
+      $("nextBtn").disabled = (currentIndex === total - 1);
+      $("lastBtn").disabled = (currentIndex === total - 1);
+
+      // day 단위 버튼
+      const curDay = item.day;
+      const dayIdx = daysInRange.indexOf(curDay);
+      $("prevDayBtn").disabled = (dayIdx <= 0);
+      $("nextDayBtn").disabled = (dayIdx === -1 || dayIdx >= daysInRange.length - 1);
+    }
+
+    function goIndex(idx) {
+      if (filtered.length === 0) return;
+      currentIndex = Math.max(0, Math.min(filtered.length - 1, idx));
+      meaningShown = false;
+      renderCurrent();
+    }
+
+    function goFirst() { goIndex(0); }
+    function goLast() { goIndex(filtered.length - 1); }
+    function goPrev() { goIndex(currentIndex - 1); }
+    function goNext() { goIndex(currentIndex + 1); }
+
+    function toggleMeaning() {
+      meaningShown = !meaningShown;
+      renderCurrent();
+    }
+
+    function goDay(targetDay) {
+      // targetDay의 첫 단어로 점프
+      const idx = filtered.findIndex(r => r.day === targetDay);
+      if (idx >= 0) goIndex(idx);
+    }
+
+    function goPrevDay() {
+      const curDay = filtered[currentIndex]?.day;
+      const i = daysInRange.indexOf(curDay);
+      if (i > 0) goDay(daysInRange[i - 1]);
+    }
+
+    function goNextDay() {
+      const curDay = filtered[currentIndex]?.day;
+      const i = daysInRange.indexOf(curDay);
+      if (i >= 0 && i < daysInRange.length - 1) goDay(daysInRange[i + 1]);
+    }
+
+    // ===== 파일 선택 =====
+    async function pickExcelAuto() {
+      if (supportsFSAccess()) {
+        const [handle] = await window.showOpenFilePicker({
+          multiple: false,
+          types: [{
+            description: "Excel 파일",
+            accept: {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+              "application/vnd.ms-excel": [".xls"],
+              "application/vnd.ms-excel.sheet.macroEnabled.12": [".xlsm"],
+            }
+          }],
+        });
+        const file = await handle.getFile();
+        return file;
+      } else {
+        return await new Promise((resolve, reject) => {
+          const input = $("fileInput");
+          input.value = "";
+          input.onchange = () => {
+            const f = input.files?.[0];
+            if (!f) reject(new Error("파일을 선택하지 않았습니다."));
+            else resolve(f);
+          };
+          input.click();
+        });
+      }
+    }
+
+    // ===== 이벤트 바인딩 =====
+    $("pickBtn").addEventListener("click", async () => {
+      try {
+        log("엑셀 파일 선택 중…");
+        const f = await pickExcelAuto();
+        currentFile = f;
+
+        $("fileLabel").textContent = `파일: ${f.name}`;
+        $("sheetLabel").textContent = `시트: -`;
+        $("countLabel").textContent = `단어: -`;
+
+        log("엑셀 읽는 중…");
+        const { rows, sheetName } = await readExcel(f);
+        assert(rows.length > 0, "유효한 데이터(day/단어/뜻)를 찾지 못했습니다.");
+
+        allRows = rows;
+        $("sheetLabel").textContent = `시트: ${sheetName}`;
+        $("countLabel").textContent = `단어: ${allRows.length}개`;
+
+        const mm = computeMinMaxDay(allRows);
+        assert(mm, "Day 값을 찾지 못했습니다.");
+        $("dayStart").value = mm.min;
+        $("dayEnd").value = mm.max;
+
+        $("applyBtn").disabled = false;
+        viewerEl.style.display = "none";
+        enableViewerButtons(false);
+
+        log(
+          `파일: ${f.name}\n` +
+          `시트: ${sheetName}\n` +
+          `총 단어: ${allRows.length}개\n` +
+          `Day 범위를 확인하고 '범위 적용'을 눌러주세요.`,
+          "good"
+        );
+      } catch (e) {
+        console.error(e);
+        log(e.message || String(e), "bad");
+      }
+    });
+
+    $("applyBtn").addEventListener("click", () => {
+      try { applyRange(); }
+      catch (e) { log(e.message || String(e), "bad"); }
+    });
+
+    $("firstBtn").addEventListener("click", goFirst);
+    $("lastBtn").addEventListener("click", goLast);
+    $("prevBtn").addEventListener("click", goPrev);
+    $("nextBtn").addEventListener("click", goNext);
+    $("toggleBtn").addEventListener("click", toggleMeaning);
+    $("prevDayBtn").addEventListener("click", goPrevDay);
+    $("nextDayBtn").addEventListener("click", goNextDay);
+
+    $("daySelect").addEventListener("change", (e) => {
+      const d = toInt(e.target.value);
+      if (d != null) goDay(d);
+    });
+
+    // 키보드 조작(선택): 좌우로 넘기기, 스페이스로 뜻 토글
+    window.addEventListener("keydown", (e) => {
+      if (viewerEl.style.display === "none") return;
+      if (e.key === "ArrowLeft") { e.preventDefault(); goPrev(); }
+      if (e.key === "ArrowRight") { e.preventDefault(); goNext(); }
+      if (e.key === " ") { e.preventDefault(); toggleMeaning(); }
+    });
+
+    log("대기 중…");
+  </script>
+</body>
+</html>
