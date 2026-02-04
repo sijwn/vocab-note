@@ -22,6 +22,63 @@
     .setupTitle { margin:0 0 6px; }
     .muted { color:#666; font-size: 13px; }
 
+    /* ===== 큰 이전/다음 버튼을 단어 박스 좌/우에 붙이기 ===== */
+    .wordStage {
+      position: relative;
+      margin-top: 6px;
+    }
+    
+    .sideNav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 52px;
+      height: 72%;
+      min-height: 140px;
+      border-radius: 16px;
+      border: 1px solid #eee;
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .sideNav.left { left: 10px; }
+    .sideNav.right { right: 10px; }
+    
+    .sideNav:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    
+    /* 단어 박스가 버튼에 가리지 않도록 좌우 패딩 늘리기 */
+    .wordBox {
+      padding-left: 78px;
+      padding-right: 78px;
+    }
+    
+    /* 모바일에서는 더 크게 */
+    @media (max-width: 520px) {
+      .sideNav {
+        width: 64px;
+        border-radius: 18px;
+        font-size: 26px;
+      }
+      .sideNav.left { left: 8px; }
+      .sideNav.right { right: 8px; }
+    
+      .wordBox {
+        padding-left: 86px;
+        padding-right: 86px;
+      }
+    }
+
+
     /* ===== Viewer ===== */
     .viewerWrap { display:none; margin-top: 6px; }
     .viewerTop {
@@ -120,10 +177,17 @@
         </div>
       </div>
 
-      <div class="wordBox" id="wordBox" role="button" tabindex="0" aria-label="단어/뜻 토글">
-        <div class="word" id="wordText">-</div>
-        <div class="meaning" id="meanText" style="display:none;">-</div>
+      <div class="wordStage">
+        <button class="sideNav left" id="sidePrev" title="이전">&lt;</button>
+      
+        <div class="wordBox" id="wordBox" role="button" tabindex="0" aria-label="단어/뜻 토글">
+          <div class="word" id="wordText">-</div>
+          <div class="meaning" id="meanText" style="display:none;">-</div>
+        </div>
+      
+        <button class="sideNav right" id="sideNext" title="다음">&gt;</button>
       </div>
+
 
       <div class="navBtns" id="navBtns">
         <button class="secondary" id="firstBtn" title="처음">&lt;&lt;</button>
@@ -583,6 +647,9 @@
     }
 
     // ===== Events =====
+    $("sidePrev").addEventListener("click", goPrev);
+    $("sideNext").addEventListener("click", goNext);
+
     $("pickBtn").addEventListener("click", async () => {
       try {
         $("startBtn").disabled = true;
