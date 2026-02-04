@@ -19,6 +19,9 @@
     .bad { color:#b00020; }
     .good { color:#0a7a3a; }
 
+    .setupTitle { margin:0 0 6px; }
+    .muted { color:#666; font-size: 13px; }
+
     /* ===== Viewer ===== */
     .viewerWrap { display:none; margin-top: 6px; }
     .viewerTop {
@@ -29,6 +32,7 @@
       margin-bottom: 10px;
     }
     .counter { font-size: 13px; color:#555; }
+
     .topBtns { display:flex; gap: 8px; flex-wrap: wrap; align-items:center; justify-content:flex-end; }
     .tagOn { background:#111 !important; color:#fff !important; }
 
@@ -48,7 +52,6 @@
     }
     .word { font-size: 38px; font-weight: 800; letter-spacing: 0.2px; }
     .meaning { font-size: 22px; color:#222; line-height: 1.4; }
-    .hint { font-size: 13px; color:#777; }
 
     .navBtns {
       display:flex;
@@ -58,16 +61,11 @@
       flex-wrap: wrap;
     }
     .navBtns button { min-width: 96px; }
-
-    /* setup 화면은 모바일에서 공간 줄이기 */
-    .setupTitle { margin:0 0 6px; }
-    .muted { color:#666; font-size: 13px; }
-    .setupWrap { display:block; }
   </style>
 </head>
 <body>
   <div class="card">
-    <!-- ===== SETUP VIEW (파일 + 범위) ===== -->
+    <!-- ===== SETUP VIEW ===== -->
     <div class="setupWrap" id="setupWrap">
       <h2 class="setupTitle">단어장 웹 뷰어</h2>
       <div class="muted">엑셀 형식: (A=day, B=단어, C=뜻) / 시트 우선순위: <b>단어장</b> → <b>Sheet1</b> → 첫 시트</div>
@@ -83,7 +81,7 @@
         <span class="pill" id="countLabel">단어: -</span>
       </div>
 
-      <!-- ✅ 모바일에서 .xlsm이 숨겨지는 문제 회피: accept 제거(모든 파일 선택 허용) -->
+      <!-- ✅ 모바일에서 .xlsm 선택이 안 보이는 문제를 피하려고 accept 제거 -->
       <input id="fileInput" type="file" style="display:none" />
 
       <div class="row" style="margin-top:8px;">
@@ -97,7 +95,7 @@
       <div id="status" class="log" style="margin-top:12px;">대기 중…</div>
     </div>
 
-    <!-- ===== VIEWER VIEW (단어 카드만) ===== -->
+    <!-- ===== VIEWER VIEW ===== -->
     <div class="viewerWrap" id="viewerWrap">
       <div class="viewerTop">
         <div class="counter" id="counter">-</div>
@@ -110,12 +108,18 @@
       <div class="wordBox" id="wordBox" role="button" tabindex="0" aria-label="단어/뜻 토글">
         <div class="word" id="wordText">-</div>
         <div class="meaning" id="meanText" style="display:none;">-</div>
-        <div class="hint" id="hintText">박스를 누르면 뜻이 나타납니다</div>
       </div>
 
-      <div class="navBtns">
+      <div class="navBtns" id="navBtns">
+        <!-- 랜덤 OFF일 때 보여줄 버튼들 -->
+        <button class="secondary" id="firstBtn">처음</button>
+        <button class="secondary" id="prevDayBtn">이전 Day</button>
+
         <button class="secondary" id="prevBtn">이전</button>
         <button class="secondary" id="nextBtn">다음</button>
+
+        <button class="secondary" id="nextDayBtn">다음 Day</button>
+        <button class="secondary" id="lastBtn">끝</button>
       </div>
     </div>
   </div>
@@ -124,23 +128,27 @@
   <script>
     const $ = (id) => document.getElementById(id);
 
-    // UI
     const setupWrap = $("setupWrap");
     const viewerWrap = $("viewerWrap");
     const statusEl = $("status");
 
     // Data
-    let allRows = [];   // 전체
-    let inRange = [];   // 범위 내 (정렬된 원본)
-    let seqIndex = 0;   // 순차 모드 인덱스
+    let allRows = [];
+    let inRange = [];      // day 범위 내 (day 오름차순 정렬)
+    let daysInRange = [];  // 범위 내 day 목록
 
-    // Random study mode (중복 없이 랜덤 순서)
+    // Sequential mode index
+    let seqIndex = 0;
+
+    // Random mode (중복 없이 랜덤)
     let randomOn = false;
-    let randomOrder = [];   // inRange의 index들을 섞은 배열
-    let randomPos = 0;      // randomOrder에서 현재 위치
+    let randomOrder = [];  // inRange의 인덱스들
+    let randomPos = 0;
+
+    // meaning toggle
     let meaningShown = false;
 
-    // FS Access(이전 파일 불러오기)
+    // FS Access
     let currentHandle = null;
 
     function log(msg, cls="") {
@@ -156,7 +164,6 @@
     function supportsFSAccess() {
       return !!window.showOpenFilePicker;
     }
-
     function shuffleInPlace(arr) {
       for (let i = arr.length - 1; i > 0; i--) {
         const j = (Math.random() * (i + 1)) | 0;
@@ -164,7 +171,7 @@
       }
     }
 
-    // 시트 우선순위: 단어장 -> Sheet1 -> 첫 시트
+    // 시트 우선순위
     function pickSheetName(wb) {
       const names = wb.SheetNames || [];
       const norm = (s) => (s ?? "").toString().replace(/\s+/g, "").trim();
@@ -172,7 +179,7 @@
       return findBy("단어장") || findBy("Sheet1") || names[0];
     }
 
-    // (fallback) 컬럼 자동 추론
+    // fallback 자동 추론
     function parseFlexibleDayWordMean(data2d) {
       const norm = (v) => (v ?? "").toString().trim();
       const isInt = (v) => /^\d+$/.test(norm(v));
@@ -237,13 +244,6 @@
     }
 
     async function readExcelFromFile(file) {
-      // 확장자 체크(선택은 어떤 파일이든 되지만, 안내를 위해)
-      const name = (file?.name || "").toLowerCase();
-      const okExt = name.endsWith(".xlsx") || name.endsWith(".xls") || name.endsWith(".xlsm");
-      if (!okExt) {
-        // 그래도 시도는 해봄(xlsx가 아니면 실패할 수 있음)
-      }
-
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
       const sheetName = pickSheetName(wb);
@@ -263,7 +263,6 @@
       }
       if (fixed.length >= 10) return { rows: fixed, sheetName };
 
-      // fallback
       const auto = parseFlexibleDayWordMean(data);
       if (auto.rows.length >= 10) return { rows: auto.rows, sheetName };
 
@@ -292,29 +291,8 @@
       return { min, max };
     }
 
-    function applyRange() {
-      const s = toInt($("dayStart").value);
-      const e = toInt($("dayEnd").value);
-      assert(s !== null && e !== null, "Day 값이 올바르지 않습니다.");
-      assert(e >= s, "Day 끝값이 시작값보다 작습니다.");
-
-      inRange = allRows
-        .filter(r => r.day >= s && r.day <= e)
-        .sort((a,b) => (a.day - b.day));
-
-      assert(inRange.length > 0, "해당 Day 범위에 단어가 없습니다.");
-
-      seqIndex = 0;
-      meaningShown = false;
-
-      // 랜덤 상태면 랜덤 순서 새로 생성
-      buildRandomOrder();
-
-      // viewer로 전환
-      setupWrap.style.display = "none";
-      viewerWrap.style.display = "block";
-
-      render();
+    function buildDaysInRange() {
+      daysInRange = Array.from(new Set(inRange.map(r => r.day))).sort((a,b)=>a-b);
     }
 
     function buildRandomOrder() {
@@ -332,6 +310,20 @@
       return inRange[seqIndex];
     }
 
+    function setNavMode() {
+      // 랜덤 ON이면: 이전/다음만 남기고 나머지 숨김
+      const showExtra = !randomOn;
+
+      $("firstBtn").style.display = showExtra ? "" : "none";
+      $("lastBtn").style.display = showExtra ? "" : "none";
+      $("prevDayBtn").style.display = showExtra ? "" : "none";
+      $("nextDayBtn").style.display = showExtra ? "" : "none";
+
+      // prev/next는 항상 표시
+      $("prevBtn").style.display = "";
+      $("nextBtn").style.display = "";
+    }
+
     function updateShuffleBtn() {
       const btn = $("shuffleBtn");
       btn.textContent = randomOn ? "랜덤: ON" : "랜덤: OFF";
@@ -340,6 +332,7 @@
 
     function render() {
       updateShuffleBtn();
+      setNavMode();
 
       const item = currentItem();
       if (!item) return;
@@ -347,19 +340,27 @@
       $("wordText").textContent = item.word || "-";
       $("meanText").textContent = item.mean || "";
       $("meanText").style.display = meaningShown ? "block" : "none";
-      $("hintText").textContent = meaningShown ? "박스를 누르면 뜻이 사라집니다" : "박스를 누르면 뜻이 나타납니다";
 
-      // 카운터 표시
       if (randomOn) {
         $("counter").textContent = `${randomPos + 1} / ${inRange.length}`;
       } else {
         $("counter").textContent = `Day ${item.day} · ${seqIndex + 1} / ${inRange.length}`;
       }
 
-      // 버튼 활성/비활성 규칙
-      // 랜덤 ON: 이전/다음만 사용(범위 다시 선택은 항상 사용 가능)
+      // prev/next disable
       $("prevBtn").disabled = randomOn ? (randomPos === 0) : (seqIndex === 0);
       $("nextBtn").disabled = randomOn ? (randomPos >= inRange.length - 1) : (seqIndex >= inRange.length - 1);
+
+      // extra buttons disable (랜덤 OFF일 때만 의미 있음)
+      if (!randomOn) {
+        $("firstBtn").disabled = (seqIndex === 0);
+        $("lastBtn").disabled  = (seqIndex >= inRange.length - 1);
+
+        const curDay = item.day;
+        const di = daysInRange.indexOf(curDay);
+        $("prevDayBtn").disabled = (di <= 0);
+        $("nextDayBtn").disabled = (di === -1 || di >= daysInRange.length - 1);
+      }
     }
 
     function goNext() {
@@ -383,19 +384,59 @@
       render();
     }
 
+    function goFirst() { meaningShown = false; seqIndex = 0; render(); }
+    function goLast()  { meaningShown = false; seqIndex = inRange.length - 1; render(); }
+
+    function goDay(targetDay) {
+      const idx = inRange.findIndex(r => r.day === targetDay);
+      if (idx >= 0) { meaningShown = false; seqIndex = idx; render(); }
+    }
+    function goPrevDay() {
+      const item = currentItem(); if (!item) return;
+      const di = daysInRange.indexOf(item.day);
+      if (di > 0) goDay(daysInRange[di - 1]);
+    }
+    function goNextDay() {
+      const item = currentItem(); if (!item) return;
+      const di = daysInRange.indexOf(item.day);
+      if (di >= 0 && di < daysInRange.length - 1) goDay(daysInRange[di + 1]);
+    }
+
     function toggleMeaning() {
       meaningShown = !meaningShown;
       render();
     }
 
+    function applyRangeAndEnterViewer() {
+      const s = toInt($("dayStart").value);
+      const e = toInt($("dayEnd").value);
+      assert(s !== null && e !== null, "Day 값이 올바르지 않습니다.");
+      assert(e >= s, "Day 끝값이 시작값보다 작습니다.");
+
+      inRange = allRows.filter(r => r.day >= s && r.day <= e).sort((a,b)=>a.day-b.day);
+      assert(inRange.length > 0, "해당 Day 범위에 단어가 없습니다.");
+
+      buildDaysInRange();
+
+      seqIndex = 0;
+      meaningShown = false;
+
+      // 랜덤은 OFF로 시작(원하면 유지로 바꿔줄 수도 있음)
+      randomOn = false;
+      buildRandomOrder();
+
+      setupWrap.style.display = "none";
+      viewerWrap.style.display = "block";
+      render();
+    }
+
     function enterSetupMode() {
-      // viewer -> setup (파일은 유지)
       viewerWrap.style.display = "none";
       setupWrap.style.display = "block";
       log("Day 범위를 다시 지정하세요.", "good");
     }
 
-    // ===== 이전 파일 불러오기: IndexedDB =====
+    // ===== IndexedDB for previous file =====
     const IDB_DB = "vocab_note_app";
     const IDB_STORE = "kv";
     const KEY_HANDLE = "last_excel_handle";
@@ -435,7 +476,6 @@
       await idbSet(KEY_LAST_NAME, handle?.name || "");
     }
     async function loadLastHandle() { return await idbGet(KEY_HANDLE); }
-    async function loadLastName() { return (await idbGet(KEY_LAST_NAME)) || ""; }
 
     async function ensurePrevButtonState() {
       if (!supportsFSAccess()) {
@@ -445,16 +485,12 @@
       try {
         const h = await loadLastHandle();
         $("prevFileBtn").disabled = !h;
-        const lastName = await loadLastName();
-        if (lastName && $("fileLabel").textContent.includes("(선택 안 됨)")) {
-          $("fileLabel").textContent = `파일: (이전: ${lastName})`;
-        }
       } catch {
         $("prevFileBtn").disabled = true;
       }
     }
 
-    // ===== 파일 선택 =====
+    // ===== File pick =====
     async function pickExcelAuto() {
       if (supportsFSAccess()) {
         const [handle] = await window.showOpenFilePicker({
@@ -474,8 +510,6 @@
         $("prevFileBtn").disabled = false;
         return;
       }
-
-      // iOS/사파리: file input
       await new Promise((resolve, reject) => {
         const input = $("fileInput");
         input.value = "";
@@ -489,25 +523,23 @@
     }
 
     async function usePreviousFile() {
-      assert(supportsFSAccess(), "이 브라우저는 ‘이전 파일 불러오기’를 지원하지 않습니다. (iPhone/iPad는 파일을 다시 선택해야 할 수 있어요)");
+      assert(supportsFSAccess(), "이 브라우저는 ‘이전 파일 불러오기’를 지원하지 않습니다.");
       const handle = await loadLastHandle();
-      assert(handle, "저장된 이전 파일이 없습니다. 먼저 ‘엑셀 파일 불러오기’로 파일을 선택해 주세요.");
+      assert(handle, "저장된 이전 파일이 없습니다.");
 
       let perm = await handle.queryPermission({ mode: "read" });
       if (perm !== "granted") perm = await handle.requestPermission({ mode: "read" });
-      assert(perm === "granted", "파일 접근 권한이 필요합니다. 권한을 허용해 주세요.");
+      assert(perm === "granted", "파일 접근 권한이 필요합니다.");
 
       currentHandle = handle;
     }
 
     async function loadExcelAndEnableStart() {
       log("엑셀 읽는 중…");
-
       const { shownName, sheetName, rows } = await readExcelFromSource();
       assert(rows.length > 0, "유효한 데이터(day/단어/뜻)를 찾지 못했습니다.");
 
       allRows = rows;
-
       $("fileLabel").textContent = `파일: ${shownName}`;
       $("sheetLabel").textContent = `시트: ${sheetName}`;
       $("countLabel").textContent = `단어: ${allRows.length}개`;
@@ -528,11 +560,10 @@
       );
     }
 
-    // ===== 이벤트 =====
+    // ===== Events =====
     $("pickBtn").addEventListener("click", async () => {
       try {
         $("startBtn").disabled = true;
-        log("엑셀 파일 선택 중…");
         await pickExcelAuto();
         await loadExcelAndEnableStart();
       } catch (e) {
@@ -544,7 +575,6 @@
     $("prevFileBtn").addEventListener("click", async () => {
       try {
         $("startBtn").disabled = true;
-        log("이전 파일 불러오는 중…");
         await usePreviousFile();
         await loadExcelAndEnableStart();
       } catch (e) {
@@ -554,23 +584,23 @@
     });
 
     $("startBtn").addEventListener("click", () => {
-      try {
-        applyRange();
-      } catch (e) {
-        log(e.message || String(e), "bad");
-      }
+      try { applyRangeAndEnterViewer(); }
+      catch (e) { log(e.message || String(e), "bad"); }
     });
 
-    // 랜덤 토글: 켜면 1/?로 시작하도록 randomOrder를 새로 만들고 1번째부터
+    $("reselectBtn").addEventListener("click", enterSetupMode);
+
     $("shuffleBtn").addEventListener("click", () => {
       if (!inRange.length) return;
+
+      // 랜덤 ON으로 바뀌면 새로운 랜덤 순서로 1/?부터
       randomOn = !randomOn;
       meaningShown = false;
 
       if (randomOn) {
         buildRandomOrder();
       } else {
-        // 랜덤 OFF로 돌아가면 seqIndex는 현재 단어 기준으로 최대한 맞춰줌
+        // 랜덤 OFF로 돌아오면: 현재 랜덤에서 보고 있던 단어를 seqIndex로 맞춤
         const cur = currentItem();
         const idx = inRange.findIndex(r => r.day === cur.day && r.word === cur.word && r.mean === cur.mean);
         if (idx >= 0) seqIndex = idx;
@@ -578,14 +608,14 @@
       render();
     });
 
-    $("reselectBtn").addEventListener("click", () => {
-      enterSetupMode();
-    });
-
     $("prevBtn").addEventListener("click", goPrev);
     $("nextBtn").addEventListener("click", goNext);
 
-    // 단어 박스 클릭으로 뜻 토글
+    $("firstBtn").addEventListener("click", goFirst);
+    $("lastBtn").addEventListener("click", goLast);
+    $("prevDayBtn").addEventListener("click", () => { if (!randomOn) goPrevDay(); });
+    $("nextDayBtn").addEventListener("click", () => { if (!randomOn) goNextDay(); });
+
     $("wordBox").addEventListener("click", toggleMeaning);
     $("wordBox").addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
@@ -594,7 +624,6 @@
       }
     });
 
-    // 키보드: 좌우 이동
     window.addEventListener("keydown", (e) => {
       if (viewerWrap.style.display === "none") return;
       if (e.key === "ArrowLeft") { e.preventDefault(); goPrev(); }
