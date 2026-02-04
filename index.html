@@ -61,38 +61,31 @@
       padding-left: 78px;
       padding-right: 78px;
     }
+
+    /* 텍스트가 버튼 아래로 깔리지 않게 '안전영역'을 강제로 좁힘 */
+    .textSafe{
+      width: calc(100% - 160px); /* 좌/우 버튼 영역 제외 (기본값) */
+      margin: 0 auto;
+      text-align: center;
+    }
+
     
     /* 모바일에서는 더 크게 */
     @media (max-width: 520px) {
-      /* 좌우 이동 버튼 */
-      .sideNav {
-        width: 52px;          /* ↓ 줄임 */
-        min-height: 110px;    /* ↓ 줄임 */
-        font-size: 22px;      /* ↓ 줄임 */
-        border-radius: 16px;
+      .textSafe{
+        width: calc(100% - 190px); /* ✅ 모바일: 버튼이 더 커서 안전영역 더 줄임 */
       }
     
-      .sideNav.left { left: 6px; }
-      .sideNav.right { right: 6px; }
-    
-      /* 단어 박스 패딩도 같이 줄임 */
-      .wordBox {
-        padding-left: 70px;
-        padding-right: 70px;
+      .word{
+        font-size: 24px;  /* ✅ 더 줄임 */
+        line-height: 1.15;
       }
-    
-      /* 단어 크기 */
-      .word {
-        font-size: 30px;   /* 기존 36~40 → 축소 */
-        line-height: 1.2;
-      }
-    
-      /* 뜻 크기 */
-      .meaning {
-        font-size: 18px;   /* 기존 22~24 → 축소 */
+      .meaning{
+        font-size: 16px;  /* ✅ 더 줄임 */
         line-height: 1.35;
       }
     }
+
 
 
 
@@ -198,9 +191,12 @@
         <button class="sideNav left" id="sidePrev" title="이전">&lt;</button>
       
         <div class="wordBox" id="wordBox" role="button" tabindex="0" aria-label="단어/뜻 토글">
-          <div class="word" id="wordText">-</div>
-          <div class="meaning" id="meanText" style="display:none;">-</div>
+          <div class="textSafe">
+            <div class="word" id="wordText">-</div>
+            <div class="meaning" id="meanText" style="display:none;">-</div>
+          </div>
         </div>
+
       
         <button class="sideNav right" id="sideNext" title="다음">&gt;</button>
       </div>
