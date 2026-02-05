@@ -296,6 +296,32 @@
       const mm = computeMinMaxDay(rows) || { min: 0, max: 0 };
       return `vocab_stats::${shownName}::${mm.min}-${mm.max}::v1`;
     }
+
+    function addPressHandler(el, onShort, onLong, delay = 600){
+      let timer = null;
+      let longFired = false;
+    
+      const start = (e) => {
+        longFired = false;
+        timer = setTimeout(() => {
+          longFired = true;
+          onLong(e);
+        }, delay);
+      };
+    
+      const end = (e) => {
+        if (timer) clearTimeout(timer);
+        if (!longFired) onShort(e);
+      };
+    
+      el.addEventListener("mousedown", start);
+      el.addEventListener("touchstart", start, { passive:true });
+    
+      el.addEventListener("mouseup", end);
+      el.addEventListener("mouseleave", () => timer && clearTimeout(timer));
+      el.addEventListener("touchend", end);
+    }
+
     
     function itemKey(item){
       // 같은 단어가 여러 Day에 있을 수 있으니 day 포함
@@ -814,21 +840,51 @@
       render();
     });
 
-    $("impBtn").addEventListener("click", (e) => {
-      e.stopPropagation(); // ✅ wordBox 클릭(뜻 토글) 막기
-      const item = currentItem(); if (!item) return;
-      const st = getItemStat(item);
-      st.imp += 1;
-      renderStats(item);
-    });
+    addPressHandler(
+      $("impBtn"),
     
-    $("wrongBtn").addEventListener("click", (e) => {
-      e.stopPropagation();
-      const item = currentItem(); if (!item) return;
-      const st = getItemStat(item);
-      st.wrong += 1;
-      renderStats(item);
-    });
+      // 짧게: +1
+      (e) => {
+        e.stopPropagation();
+        const item = currentItem(); if (!item) return;
+        const st = getItemStat(item);
+        st.imp += 1;
+        renderStats(item);
+      },
+    
+      // 길게: -1 (최소 1)
+      (e) => {
+        e.stopPropagation();
+        const item = currentItem(); if (!item) return;
+        const st = getItemStat(item);
+        st.imp = Math.max(1, st.imp - 1);
+        renderStats(item);
+      }
+    );
+
+    addPressHandler(
+      $("wrongBtn"),
+    
+      // 짧게: +1
+      (e) => {
+        e.stopPropagation();
+        const item = currentItem(); if (!item) return;
+        const st = getItemStat(item);
+        st.wrong += 1;
+        renderStats(item);
+      },
+    
+      // 길게: -1 (최소 0)
+      (e) => {
+        e.stopPropagation();
+        const item = currentItem(); if (!item) return;
+        const st = getItemStat(item);
+        st.wrong = Math.max(0, st.wrong - 1);
+        renderStats(item);
+      }
+    );
+
+
 
 
     $("prevBtn").addEventListener("click", goPrev);
