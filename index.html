@@ -22,20 +22,34 @@
     .setupTitle { margin:0 0 6px; }
     .muted { color:#666; font-size: 13px; }
 
+    /* ===== Viewer ===== */
+    .viewerWrap { display:none; margin-top: 6px; }
+    .viewerTop {
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .counter { font-size: 13px; color:#555; }
+    .topBtns { display:flex; gap: 8px; flex-wrap: wrap; align-items:center; justify-content:flex-end; }
+    .tagOn { background:#111 !important; color:#fff !important; }
+
     /* ===== word stage ===== */
     .wordStage {
       position: relative;
       margin-top: 6px;
     }
 
-    /* 흰 좌/우 큰 버튼: 높이 줄여서 wordBox 안쪽만 */
+    /* 큰 좌우 버튼(워드박스 안으로) */
     .sideNav {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
       width: 52px;
-      height: 62%;           /* ✅ 줄임 */
-      min-height: 110px;     /* ✅ 줄임 */
+      height: 62%;
+      min-height: 110px;
       border-radius: 16px;
       border: 1px solid #eee;
       background: rgba(255,255,255,0.85);
@@ -44,10 +58,10 @@
       align-items: center;
       justify-content: center;
       font-size: 22px;
-      font-weight: 800;
+      font-weight: 900;
       cursor: pointer;
       user-select: none;
-      z-index: 3;
+      z-index: 2;
     }
     .sideNav.left { left: 10px; }
     .sideNav.right { right: 10px; }
@@ -59,20 +73,6 @@
       margin: 0 auto;
       text-align: center;
     }
-
-    /* ===== Viewer ===== */
-    .viewerWrap { display:none; margin-top: 6px; }
-    .viewerTop {
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .counter { font-size: 13px; color:#555; }
-
-    .topBtns { display:flex; gap: 8px; flex-wrap: wrap; align-items:center; justify-content:flex-end; }
-    .tagOn { background:#111 !important; color:#fff !important; }
 
     .wordBox {
       border: 1px solid #f0f0f0;
@@ -88,8 +88,10 @@
       justify-content: center;
       gap: 10px;
       position: relative;
-      z-index: 1;
+      overflow: hidden;
     }
+
+    /* 단어/뜻 폰트 */
     .word { font-size: 24px; font-weight: 800; letter-spacing: 0.2px; }
     .meaning { font-size: 16px; color:#222; line-height: 1.4; }
 
@@ -104,6 +106,7 @@
       justify-content:space-between;
       gap:10px;
       pointer-events:none;
+      z-index: 3;
     }
     .statsText{
       display:flex;
@@ -120,8 +123,9 @@
       color:#444;
     }
     .stat.wrong.zero{ color:#aaa; border-color:#f0f0f0; }
-    .stat.wrong.hot{ color:#b00020; border-color:#f2c2c8; font-weight:700; }
+    .stat.wrong.hot{ color:#b00020; border-color:#f2c2c8; font-weight:800; }
 
+    /* ===== bottom nav buttons ===== */
     .navBtns {
       display:flex;
       justify-content: center;
@@ -130,41 +134,63 @@
       flex-wrap: wrap;
       align-items: center;
     }
-
     .navBtns button {
       padding: 10px 10px;
       border-radius: 12px;
-      font-weight: 600;
+      font-weight: 700;
       min-width: 0;
     }
 
-    /* ✅ nav 줄에 들어가는 ? X 버튼 */
-    .navMidBtn{
-      width: 44px;
+    /* ? / X 버튼(아래 네비게이션 줄 사이에 들어갈 것) */
+    .midBtn{
+      width: 46px;
       height: 44px;
-      padding: 0;
-      border-radius: 12px;
+      border-radius: 14px;
       border: 1px solid #e6e6e6;
-      background: rgba(255,255,255,0.92);
-      backdrop-filter: blur(6px);
-      font-size: 18px;
-      font-weight: 900;
+      background: #fff;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      padding: 0;
       line-height: 1;
-      touch-action: manipulation; /* ✅ 모바일 더블 트리거 방지 보조 */
+      font-size: 18px;
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
     }
-    .navMidBtn:active{ transform: translateY(1px); }
+    .midBtn:active{ transform: translateY(1px); }
+
+    /* 필터 컨트롤(상단) */
+    .miniCtrl{
+      display:flex;
+      gap:6px;
+      align-items:center;
+      background:#f3f3f3;
+      border-radius: 14px;
+      padding: 6px;
+    }
+    .miniCtrl button{
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-weight: 900;
+      background:#fff;
+      border: 1px solid #e6e6e6;
+    }
+    .miniCtrl .label{
+      font-size: 13px;
+      padding: 0 6px;
+      color:#444;
+      font-weight: 800;
+      white-space: nowrap;
+    }
 
     @media (max-width: 520px) {
       .navBtns { gap: 6px; }
       .navBtns button { padding: 9px 9px; font-size: 13px; }
       .word { font-size: 20px; }
       .meaning { font-size: 14px; }
-      .navMidBtn{ width: 42px; height: 42px; font-size: 18px; }
-      .sideNav{ width: 50px; }
-      .textSafe{ width: calc(100% - 150px); }
+      .sideNav { width: 50px; height: 58%; min-height: 100px; }
+      .midBtn { width: 44px; height: 42px; }
     }
   </style>
 </head>
@@ -203,14 +229,23 @@
     <div class="viewerWrap" id="viewerWrap">
       <div class="viewerTop">
         <div class="counter" id="counter">-</div>
+
         <div class="topBtns">
+          <!-- ✅ 중요도 필터 -->
+          <div class="miniCtrl" title="중요도 필터 (저장됨)">
+            <button id="impFilterMinus" aria-label="중요도 필터 -1">-</button>
+            <span class="label" id="impFilterLabel">중요도≥1 OFF</span>
+            <button id="impFilterPlus" aria-label="중요도 필터 +1">+</button>
+            <button class="secondary" id="impFilterToggle" style="padding:8px 10px; font-weight:900;">필터</button>
+          </div>
+
           <button class="secondary" id="shuffleBtn">랜덤: OFF</button>
           <button class="secondary" id="reselectBtn">범위 다시 선택</button>
         </div>
       </div>
 
       <div class="wordStage">
-        <button class="sideNav left" id="sidePrev" title="이전" type="button">&lt;</button>
+        <button class="sideNav left" id="sidePrev" title="이전">&lt;</button>
 
         <div class="wordBox" id="wordBox" role="button" tabindex="0" aria-label="단어/뜻 토글">
           <div class="statsBar" id="statsBar">
@@ -226,23 +261,23 @@
           </div>
         </div>
 
-        <button class="sideNav right" id="sideNext" title="다음" type="button">&gt;</button>
+        <button class="sideNav right" id="sideNext" title="다음">&gt;</button>
       </div>
 
-      <!-- ✅ ? / X 를 "회색 < > 사이"에 넣기 -->
+      <!-- ✅ 네비 버튼 줄: 가운데에 ? / X 끼워넣음 -->
       <div class="navBtns" id="navBtns">
-        <button class="secondary" id="firstBtn" title="처음" type="button">&lt;&lt;</button>
-        <button class="secondary" id="prevDayBtn" title="이전 Day" type="button">|&lt;</button>
+        <button class="secondary" id="firstBtn" title="처음">&lt;&lt;</button>
+        <button class="secondary" id="prevDayBtn" title="이전 Day">|&lt;</button>
 
-        <button class="secondary" id="prevBtn" title="이전" type="button">&lt;</button>
+        <button class="secondary" id="prevBtn" title="이전">&lt;</button>
 
-        <button class="navMidBtn" id="impBtn" title="중요도 +1 (길게: -1)" type="button">?</button>
-        <button class="navMidBtn" id="wrongBtn" title="틀린 횟수 +1 (길게: -1)" type="button">X</button>
+        <button class="midBtn" id="impBtn" title="중요도 +1 (길게: -1)">?</button>
+        <button class="midBtn" id="wrongBtn" title="틀린 횟수 +1 (길게: -1)">X</button>
 
-        <button class="secondary" id="nextBtn" title="다음" type="button">&gt;</button>
+        <button class="secondary" id="nextBtn" title="다음">&gt;</button>
 
-        <button class="secondary" id="nextDayBtn" title="다음 Day" type="button">&gt;|</button>
-        <button class="secondary" id="lastBtn" title="끝" type="button">&gt;&gt;</button>
+        <button class="secondary" id="nextDayBtn" title="다음 Day">&gt;|</button>
+        <button class="secondary" id="lastBtn" title="끝">&gt;&gt;</button>
       </div>
     </div>
   </div>
@@ -258,6 +293,7 @@
     // Data
     let allRows = [];
     let inRange = [];
+    let viewList = [];
     let daysInRange = [];
 
     // Sequential
@@ -274,36 +310,44 @@
     // FS Access
     let currentHandle = null;
 
-    // ===== Word stats (importance / wrong) persisted =====
-    let statsStoreKey = "vocab_stats_default"; // 파일별로 분리 저장용
+    // ===== Word stats persisted =====
+    let statsStoreKey = "vocab_stats_default";
     let stats = {}; // { [itemKey]: { imp:number, wrong:number } }
+
+    // ===== Importance filter (persist) =====
+    let filterStoreKey = "vocab_filter_default";
+    let impFilterMin = 1;
+    let impFilterOn = false;
 
     function buildStatsStoreKey(shownName, rows){
       const mm = computeMinMaxDay(rows) || { min: 0, max: 0 };
       return `vocab_stats::${shownName}::${mm.min}-${mm.max}::v1`;
     }
+    function buildFilterStoreKey(shownName, rows){
+      const mm = computeMinMaxDay(rows) || { min: 0, max: 0 };
+      return `vocab_filter::${shownName}::${mm.min}-${mm.max}::v1`;
+    }
 
-    // ✅ 모바일 2번 실행 버그 방지: pointer 이벤트로 통일
+    // ✅ 2번 올라가는 문제 방지: Pointer Events로 통일
     function addPressHandler(el, onShort, onLong, delay = 600){
       let timer = null;
       let longFired = false;
-      let activePointerId = null;
+      let pointerId = null;
 
       const clear = () => {
-        if (timer) clearTimeout(timer);
-        timer = null;
-        activePointerId = null;
-        longFired = false;
+        if (timer) { clearTimeout(timer); timer = null; }
       };
 
       el.addEventListener("pointerdown", (e) => {
-        // 같은 손가락/마우스만 추적
-        activePointerId = e.pointerId;
-        longFired = false;
-
-        // iOS/Android에서 클릭 중복 방지
+        // 클릭/스크롤 등 겹침 방지
         e.preventDefault();
+        e.stopPropagation();
 
+        longFired = false;
+        pointerId = e.pointerId;
+        try { el.setPointerCapture(pointerId); } catch {}
+
+        clear();
         timer = setTimeout(() => {
           longFired = true;
           onLong(e);
@@ -311,18 +355,19 @@
       });
 
       el.addEventListener("pointerup", (e) => {
-        if (activePointerId !== e.pointerId) return;
         e.preventDefault();
-        if (timer) clearTimeout(timer);
-        timer = null;
+        e.stopPropagation();
+
+        clear();
         if (!longFired) onShort(e);
-        activePointerId = null;
+
+        try { el.releasePointerCapture(pointerId); } catch {}
+        pointerId = null;
       });
 
-      el.addEventListener("pointercancel", clear);
-      el.addEventListener("pointerleave", () => {
-        if (timer) clearTimeout(timer);
-        timer = null;
+      el.addEventListener("pointercancel", () => {
+        clear();
+        pointerId = null;
       });
     }
 
@@ -340,10 +385,27 @@
       }
     }
     function saveStats(){
+      try{ localStorage.setItem(statsStoreKey, JSON.stringify(stats)); }
+      catch(e){ console.warn("saveStats failed:", e); }
+    }
+
+    function loadFilter(){
       try{
-        localStorage.setItem(statsStoreKey, JSON.stringify(stats));
+        const raw = localStorage.getItem(filterStoreKey);
+        if (!raw) return;
+        const obj = JSON.parse(raw);
+        impFilterMin = Math.max(1, Number(obj.min ?? 1) || 1);
+        impFilterOn = !!obj.on;
+      }catch{
+        impFilterMin = 1;
+        impFilterOn = false;
+      }
+    }
+    function saveFilter(){
+      try{
+        localStorage.setItem(filterStoreKey, JSON.stringify({ min: impFilterMin, on: impFilterOn }));
       }catch(e){
-        console.warn("saveStats failed:", e);
+        console.warn("saveFilter failed:", e);
       }
     }
 
@@ -366,6 +428,34 @@
       saveStats();
     }
 
+    function updateFilterUI(){
+      $("impFilterLabel").textContent =
+        `중요도≥${impFilterMin} ` + (impFilterOn ? "ON" : "OFF");
+      $("impFilterToggle").classList.toggle("tagOn", impFilterOn);
+    }
+
+    function rebuildViewList(){
+      if (!impFilterOn) {
+        viewList = [...inRange];
+      } else {
+        viewList = inRange.filter(item => getItemStat(item).imp >= impFilterMin);
+      }
+
+      // 비었으면 안내 + 최소한 렌더 안전
+      if (viewList.length === 0) {
+        // 필터가 너무 빡센 경우: 화면은 유지하되, counter에 안내
+        $("counter").textContent = `필터 결과 0개 (중요도≥${impFilterMin})`;
+      }
+
+      seqIndex = 0;
+      randomPos = 0;
+      meaningShown = false;
+
+      buildRandomOrder();
+      updateFilterUI();
+      saveFilter();
+    }
+
     function log(msg, cls="") {
       statusEl.textContent = msg;
       statusEl.className = "log " + cls;
@@ -376,7 +466,9 @@
       if (!Number.isFinite(n)) return null;
       return Math.trunc(n);
     }
-    function supportsFSAccess() { return !!window.showOpenFilePicker; }
+    function supportsFSAccess() {
+      return !!window.showOpenFilePicker;
+    }
     function shuffleInPlace(arr) {
       for (let i = arr.length - 1; i > 0; i--) {
         const j = (Math.random() * (i + 1)) | 0;
@@ -506,18 +598,18 @@
     }
 
     function buildRandomOrder() {
-      randomOrder = Array.from({ length: inRange.length }, (_, i) => i);
+      randomOrder = Array.from({ length: viewList.length }, (_, i) => i);
       shuffleInPlace(randomOrder);
       randomPos = 0;
     }
 
     function currentItem() {
-      if (!inRange.length) return null;
+      if (!viewList.length) return null;
       if (randomOn) {
         const idx = randomOrder[randomPos] ?? randomOrder[0];
-        return inRange[idx];
+        return viewList[idx];
       }
-      return inRange[seqIndex];
+      return viewList[seqIndex];
     }
 
     function setNavMode() {
@@ -539,6 +631,7 @@
     function render() {
       updateShuffleBtn();
       setNavMode();
+      updateFilterUI();
 
       const item = currentItem();
       if (!item) return;
@@ -550,17 +643,17 @@
       renderStats(item);
 
       if (randomOn) {
-        $("counter").textContent = `${randomPos + 1} / ${inRange.length}`;
+        $("counter").textContent = `${randomPos + 1} / ${viewList.length}`;
       } else {
-        $("counter").textContent = `Day ${item.day} · ${seqIndex + 1} / ${inRange.length}`;
+        $("counter").textContent = `Day ${item.day} · ${seqIndex + 1} / ${viewList.length}`;
       }
 
       $("prevBtn").disabled = randomOn ? (randomPos === 0) : (seqIndex === 0);
-      $("nextBtn").disabled = randomOn ? (randomPos >= inRange.length - 1) : (seqIndex >= inRange.length - 1);
+      $("nextBtn").disabled = randomOn ? (randomPos >= viewList.length - 1) : (seqIndex >= viewList.length - 1);
 
       if (!randomOn) {
         $("firstBtn").disabled = (seqIndex === 0);
-        $("lastBtn").disabled  = (seqIndex >= inRange.length - 1);
+        $("lastBtn").disabled  = (seqIndex >= viewList.length - 1);
 
         const di = daysInRange.indexOf(item.day);
         $("prevDayBtn").disabled = (di <= 0);
@@ -569,17 +662,17 @@
     }
 
     function goNext() {
-      if (!inRange.length) return;
+      if (!viewList.length) return;
       meaningShown = false;
       if (randomOn) {
-        if (randomPos < inRange.length - 1) randomPos++;
+        if (randomPos < viewList.length - 1) randomPos++;
       } else {
-        if (seqIndex < inRange.length - 1) seqIndex++;
+        if (seqIndex < viewList.length - 1) seqIndex++;
       }
       render();
     }
     function goPrev() {
-      if (!inRange.length) return;
+      if (!viewList.length) return;
       meaningShown = false;
       if (randomOn) {
         if (randomPos > 0) randomPos--;
@@ -590,10 +683,11 @@
     }
 
     function goFirst() { meaningShown = false; seqIndex = 0; render(); }
-    function goLast()  { meaningShown = false; seqIndex = inRange.length - 1; render(); }
+    function goLast()  { meaningShown = false; seqIndex = Math.max(0, viewList.length - 1); render(); }
 
     function goDay(targetDay) {
-      const idx = inRange.findIndex(r => r.day === targetDay);
+      // "필터 적용된 리스트"에서 해당 Day 첫 항목으로 이동
+      const idx = viewList.findIndex(r => r.day === targetDay);
       if (idx >= 0) { meaningShown = false; seqIndex = idx; render(); }
     }
     function goPrevDay() {
@@ -627,7 +721,8 @@
       meaningShown = false;
       randomOn = false;
 
-      buildRandomOrder();
+      // ✅ 필터 반영해서 viewList 구성
+      rebuildViewList();
 
       setupWrap.style.display = "none";
       viewerWrap.style.display = "block";
@@ -758,8 +853,13 @@
 
       allRows = rows;
 
+      // ✅ 파일별 stats / filter 키
       statsStoreKey = buildStatsStoreKey(shownName, allRows);
+      filterStoreKey = buildFilterStoreKey(shownName, allRows);
+
       loadStats();
+      loadFilter();
+      updateFilterUI();
 
       $("fileLabel").textContent = `파일: ${shownName}`;
       $("sheetLabel").textContent = `시트: ${sheetName}`;
@@ -779,8 +879,8 @@
     }
 
     // ===== Events =====
-    $("sidePrev").addEventListener("click", goPrev);
-    $("sideNext").addEventListener("click", goNext);
+    $("sidePrev").addEventListener("click", (e) => { e.preventDefault(); goPrev(); });
+    $("sideNext").addEventListener("click", (e) => { e.preventDefault(); goNext(); });
 
     $("pickBtn").addEventListener("click", async () => {
       try {
@@ -812,64 +912,82 @@
     $("reselectBtn").addEventListener("click", enterSetupMode);
 
     $("shuffleBtn").addEventListener("click", () => {
-      if (!inRange.length) return;
+      if (!viewList.length) return;
       randomOn = !randomOn;
       meaningShown = false;
 
-      if (randomOn) buildRandomOrder();
-      else {
+      if (randomOn) {
+        buildRandomOrder();
+      } else {
+        // 랜덤 OFF로 돌아올 때: 현재 단어를 seqIndex에 맞춰줌
         const cur = currentItem();
-        const idx = inRange.findIndex(r => r.day === cur.day && r.word === cur.word && r.mean === cur.mean);
+        const idx = viewList.findIndex(r => r.day === cur.day && r.word === cur.word && r.mean === cur.mean);
         if (idx >= 0) seqIndex = idx;
       }
       render();
     });
 
-    // ✅ ? / X : +1 / (길게) -1
+    // ✅ 중요도/틀린횟수: 짧게 +1, 길게 -1
     addPressHandler(
       $("impBtn"),
       (e) => {
-        e.stopPropagation();
         const item = currentItem(); if (!item) return;
         const st = getItemStat(item);
         st.imp += 1;
         renderStats(item);
+
+        // 필터 ON이면 즉시 반영(올렸는데 조건 충족/불충족 바뀔 수 있음)
+        if (impFilterOn) {
+          const curKey = itemKey(item);
+          rebuildViewList();
+          const idx = viewList.findIndex(x => itemKey(x) === curKey);
+          if (idx >= 0) seqIndex = idx;
+        }
+        render();
       },
       (e) => {
-        e.stopPropagation();
         const item = currentItem(); if (!item) return;
         const st = getItemStat(item);
         st.imp = Math.max(1, st.imp - 1);
         renderStats(item);
+
+        if (impFilterOn) {
+          const curKey = itemKey(item);
+          rebuildViewList();
+          const idx = viewList.findIndex(x => itemKey(x) === curKey);
+          seqIndex = Math.max(0, idx);
+        }
+        render();
       }
     );
 
     addPressHandler(
       $("wrongBtn"),
       (e) => {
-        e.stopPropagation();
         const item = currentItem(); if (!item) return;
         const st = getItemStat(item);
         st.wrong += 1;
         renderStats(item);
+        render();
       },
       (e) => {
-        e.stopPropagation();
         const item = currentItem(); if (!item) return;
         const st = getItemStat(item);
         st.wrong = Math.max(0, st.wrong - 1);
         renderStats(item);
+        render();
       }
     );
 
+    // nav buttons
     $("prevBtn").addEventListener("click", goPrev);
     $("nextBtn").addEventListener("click", goNext);
-
     $("firstBtn").addEventListener("click", goFirst);
     $("lastBtn").addEventListener("click", goLast);
     $("prevDayBtn").addEventListener("click", () => { if (!randomOn) goPrevDay(); });
     $("nextDayBtn").addEventListener("click", () => { if (!randomOn) goNextDay(); });
 
+    // word toggle
     $("wordBox").addEventListener("click", toggleMeaning);
     $("wordBox").addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
@@ -884,9 +1002,27 @@
       if (e.key === "ArrowRight") { e.preventDefault(); goNext(); }
     });
 
+    // ===== Filter controls =====
+    $("impFilterMinus").addEventListener("click", () => {
+      impFilterMin = Math.max(1, impFilterMin - 1);
+      rebuildViewList();
+      render();
+    });
+    $("impFilterPlus").addEventListener("click", () => {
+      impFilterMin = Math.min(99, impFilterMin + 1);
+      rebuildViewList();
+      render();
+    });
+    $("impFilterToggle").addEventListener("click", () => {
+      impFilterOn = !impFilterOn;
+      rebuildViewList();
+      render();
+    });
+
     (async () => {
       await ensurePrevButtonState();
       log("대기 중…");
+      updateFilterUI();
     })();
   </script>
 </body>
